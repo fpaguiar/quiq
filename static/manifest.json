@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Quiq",
+  "version": "0.1",
+  "description": "Quick daily tasks",
+  "action": {
+    "default_title": "Quiq",
+    "default_popup": "index.html",
+    "default_icon": {
+      "48": "favicon.png"
+    }
+  },
+  "permissions": [],
+  "icons": {
+    "48": "favicon.png"
+  }
+}
