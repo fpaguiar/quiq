@@ -1,52 +1,66 @@
 <script lang="ts">
-	import type { Task as TaskType } from '$lib/types';
+	import type { TaskStore, Task as TaskType } from '$lib/types';
 	import { Task } from '$lib/components/task';
 	import { TaskList } from '$lib/components/task-list';
 	import { TaskCreator } from '$lib/components/task-creator';
-	import { retrieveStore, saveStore } from '$lib/utils/store';
 	import { onMount } from 'svelte';
+	import { KEY_STORE } from '$lib/constants';
+
+	const initialStore: TaskStore = {
+		pending: [],
+		completed: []
+	};
 
 	let newTask = $state('');
-	let pendingTasks = $state<TaskType[]>([]);
-	let completedTasks = $state<TaskType[]>([]);
+	let store: TaskStore = $state(initialStore);
 
-	onMount(() => {
-		const store = retrieveStore();
+	onMount(async () => {
+		const persistedStore = localStorage.getItem(KEY_STORE);
 
-		pendingTasks = store.pending;
-		completedTasks = store.completed;
+		store = persistedStore ? JSON.parse(persistedStore) : store;
+
+		$effect(() => {
+			localStorage.setItem(KEY_STORE, JSON.stringify(store));
+			console.log('Store updated');
+		});
 	});
 
-	const save = () => {
-		saveStore({
-			completed: completedTasks,
-			pending: pendingTasks
-		});
-	};
-
 	const handleNewTask = () => {
-		pendingTasks.push({
+		const task: TaskType = {
 			id: crypto.randomUUID(),
 			description: newTask
-		});
+		};
+
+		store.pending.push(task);
+
 		newTask = '';
-		save();
 	};
-	const handleCompletedTask = (taskId: string, value: boolean) => {
+	const handleClickTask = (taskId: string, value: boolean) => {
 		if (value) {
-			const task = pendingTasks.find((task) => task.id === taskId);
+			// Completing task
+			const task = store.pending.find((task) => task.id === taskId);
 			if (task) {
-				completedTasks.push(task);
+				store.pending = store.pending.filter((task) => task.id !== taskId);
+				store.completed.push(task);
 			}
-			pendingTasks = pendingTasks.filter((task) => task.id !== taskId);
-			save();
 		} else {
-			const task = completedTasks.find((task) => task.id === taskId);
+			// Uncompleting task
+			const task = store.completed.find((task) => task.id === taskId);
 			if (task) {
-				pendingTasks.push(task);
+				store.completed = store.completed.filter((task) => task.id !== taskId);
+				store.pending.push(task);
 			}
-			completedTasks = completedTasks.filter((task) => task.id !== taskId);
-			save();
+		}
+	};
+	const onDelete = (taskId: string) => {
+		const task = store.pending.find((task) => task.id === taskId);
+		if (task) {
+			store.pending = store.pending.filter((task) => task.id !== taskId);
+		} else {
+			const task = store.completed.find((task) => task.id === taskId);
+			if (task) {
+				store.completed = store.completed.filter((task) => task.id !== taskId);
+			}
 		}
 	};
 </script>
@@ -54,15 +68,16 @@
 <div class="p-2">
 	<TaskCreator bind:value={newTask} onEnter={handleNewTask} />
 	<div class="mt-4">
-		<TaskList tasks={pendingTasks} onTaskComplete={handleCompletedTask} />
+		<TaskList tasks={store.pending} onTaskComplete={handleClickTask} onTaskDelete={onDelete} />
 	</div>
 	<div class="mt-4 text-gray-500">
-		{#each completedTasks as task (task.id)}
+		{#each store.completed as completedTask (completedTask.id)}
 			<Task
-				id={task.id}
+				id={completedTask.id}
 				checked={true}
-				description={task.description}
-				onCheckedChange={(value) => handleCompletedTask(task.id, value)}
+				description={completedTask.description}
+				onCheckedChange={(value) => handleClickTask(completedTask.id, value)}
+				{onDelete}
 			/>
 		{/each}
 	</div>

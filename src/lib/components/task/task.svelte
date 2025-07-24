@@ -8,16 +8,15 @@
 		checked: boolean;
 		description: string;
 		onCheckedChange: (checked: boolean) => void;
+		onDelete: (id: string) => void;
 	};
 
-	let { id, checked, description, onCheckedChange }: Props = $props();
+	let { id, checked, description, onCheckedChange, onDelete }: Props = $props();
 
 	let areActionsVisible = $state(false);
 
 	const handleMouseHover = () => {
-		if (!checked) {
-			areActionsVisible = !areActionsVisible;
-		}
+		areActionsVisible = !areActionsVisible;
 	};
 </script>
 
@@ -31,7 +30,11 @@
 		<Checkbox {id} {checked} onCheckedChange={(value) => onCheckedChange(value)} />
 		<Label for={id} class="ml-2">{description}</Label>
 	</div>
-	<div class={areActionsVisible ? 'visible' : 'hidden'}>
-		<Trash class="h-4 w-4" />
+	<div
+		class={areActionsVisible
+			? 'visible text-gray-950 hover:cursor-pointer hover:text-red-700'
+			: 'hidden'}
+	>
+		<Trash class="h-4 w-4" onclick={() => onDelete(id)} />
 	</div>
 </div>
